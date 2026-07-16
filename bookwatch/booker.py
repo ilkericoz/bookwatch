@@ -13,8 +13,8 @@ The POST responds with JSON {ok, booking: {assigned_crew, is_assigned_to_me}}.
 """
 import json
 
-from legacy.schedule import record_slot
-from legacy.subscribers import broadcast_alert
+from bookwatch.schedule import record_slot
+from bookwatch.subscribers import broadcast_alert
 from bookwatch.parser import parse_modal
 
 _pending_slots: list = []  # in-memory guard against simultaneous conflicting claims
