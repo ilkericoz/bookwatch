@@ -21,7 +21,7 @@ playwright install chromium   # only the playwright driver is used (CDP attach)
 ```
 
 1. Copy `.env.example` to `.env` and fill in the Telegram bot token + owner chat ID.
-2. Launch Chrome with remote debugging on :9223 (`launch_legacy_chrome.bat`, machine-local) and log into the site.
+2. Launch Chrome with remote debugging on :9223 (`launch_chrome.bat`, machine-local) and log into the site.
 3. Start the bot: `python main.py` (or `run_logged.bat` for a console-less logged run).
 4. Optional: `python ui.py` for the web UI (`setup_auth.py` generates the login hash).
 

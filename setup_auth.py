@@ -7,7 +7,7 @@ from werkzeug.security import generate_password_hash
 
 ENV_PATH = Path(__file__).parent / ".env"
 
-print("=== Legacy UI — auth setup ===\n")
+print("=== Booking UI — auth setup ===\n")
 
 username = input("Username [admin]: ").strip() or "admin"
 
