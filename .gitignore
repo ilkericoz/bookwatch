@@ -20,6 +20,7 @@ bot_heartbeat.json
 items_cache.json
 crew_schedule.json
 known_listing_types.json
+known_cities.json
 config.backup_*.json
 
 # Logs, exports, local tooling
