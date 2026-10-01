@@ -11,7 +11,7 @@ bot-recorded entry in crew_schedule.json and check:
     `unassigned_alerted` so intentional drops don't re-alert every cycle;
     the flag clears if the booking becomes ours again)
 
-Only entries whose source starts with "bot" are touched; Legacy-era
+Only entries whose source starts with "bot" are touched; older
 entries are left alone.
 """
 import asyncio

@@ -1,4 +1,4 @@
-"""Telegram command listener for the bot (port of legacy/commands.py)."""
+"""Telegram command listener for the bot."""
 import asyncio
 import os
 from datetime import datetime

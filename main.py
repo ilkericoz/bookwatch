@@ -1,8 +1,7 @@
 """
 Booking Booking Watcher & Auto-Claimer — Human-like Chrome mode
 
-Successor to legacy_bot.py after the operation moved to the site.
-Attaches to the same real, user-launched Chrome over CDP (port 9223) and
+Attaches to a real, user-launched Chrome over CDP (port 9223) and
 reuses its logged-in the site session for all HTTP calls — no headless
 browser, no automation fingerprint.
 

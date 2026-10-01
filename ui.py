@@ -199,7 +199,7 @@ def get_status():
 async def _scan_items_async(cdp_endpoint, base_url, cities, months_ahead=6):
     """Pull real listing/tour names straight from the site's own bookings
     grid — same HTTP-through-CDP call watcher.py makes for live polling, just
-    scanning further ahead. No Legacy involved."""
+    scanning further ahead."""
     from playwright.async_api import async_playwright
 
     async with async_playwright() as pw:
@@ -237,7 +237,7 @@ def get_items():
     cfg = _load(CONFIG_PATH)
     cdp = cfg.get("cdp_endpoint", "http://127.0.0.1:9223").replace("localhost", "127.0.0.1")
     base_url = cfg.get("base_url", "https://example.com")
-    cities = sorted({c for u in cfg.get("urls", []) for c in u.get("cities", [])}) or ["Testville"]
+    cities = sorted({c for u in cfg.get("urls", []) for c in u.get("cities", [])})
     try:
         result = asyncio.run(_scan_items_async(cdp, base_url, cities))
         _save_items_cache(result)
