@@ -6,6 +6,22 @@ broke, what was investigated and ruled out.
 
 ---
 
+## 2026-10-06 — Public repo renamed to `bookwatch`; history rewritten
+
+The repository name and the older commits still carried the target site's
+brand even though HEAD no longer did. Renamed the repo to `bookwatch` (the old
+URL redirects) and rewrote all 22 commits so every revision uses the same
+neutral names as HEAD: renamed paths, replaced the name in file contents and
+commit messages, and kept the final tree byte-identical. Every commit still
+compiles and the tests pass at HEAD. Added an "independent project, not
+affiliated" note to the README.
+
+Caveat: a force-push doesn't make GitHub forget the previous commits — they stay
+fetchable by exact SHA until GitHub garbage-collects them (or support purges
+them on request). Nothing is browsable from the repo itself.
+
+---
+
 ## 2026-10-06 — The bot no longer launches Chrome itself
 
 `main.py` used to auto-start a machine-local `launch_chrome.bat` when Chrome

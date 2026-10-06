@@ -2,6 +2,8 @@
 
 Watches a bookings grid website (set `base_url` in `config.json`) for new photoshoot bookings in the configured cities, alerts subscribers on Telegram, and auto-claims ("Assign myself") bookings that fall inside configured date/time windows.
 
+> **Independent project.** Not affiliated with, endorsed by, or sponsored by any booking platform or brand it can be pointed at. Use it only with accounts you're authorized to use, and in line with the target site's terms of service.
+
 ## How it works
 
 The bot attaches to a real, user-launched Chrome over CDP (port 9223) and reuses its logged-in site session for all HTTP calls — no headless browser, no automation fingerprint.
