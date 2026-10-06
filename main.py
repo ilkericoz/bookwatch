@@ -6,8 +6,8 @@ reuses its logged-in site session for all HTTP calls — no headless
 browser, no automation fingerprint.
 
 How it works:
-  1. Run launch_chrome.bat once and log into the site (`base_url` in config.json) in that
-     Chrome (same profile/session as before).
+  1. Launch Chrome with --remote-debugging-port=9223 (and a persistent
+     --user-data-dir) and log into the site (`base_url` in config.json).
   2. Start this bot: `python main.py`.
   3. The bot polls the bookings grid month views through the browser's
      session, alerts on new bookings via Telegram, and auto-claims
@@ -20,9 +20,7 @@ Telegram commands: /status /screenshot /fast /normal /interval /start /stop /sub
 import asyncio
 import json
 import random
-import subprocess
 import sys
-import time
 from datetime import datetime
 from pathlib import Path
 
@@ -47,7 +45,6 @@ load_dotenv()
 
 HEARTBEAT_INTERVAL = 6 * 60 * 60
 HEARTBEAT_FILE     = Path(__file__).parent / "bot_heartbeat.json"
-_BAT_PATH          = Path(__file__).parent / "launch_chrome.bat"
 
 
 async def _heartbeat_writer(state):
@@ -70,7 +67,12 @@ async def _telegram_heartbeat(state):
 
 
 async def ensure_browser_running(cdp_endpoint: str) -> bool:
-    """Return True if Chrome is reachable on cdp_endpoint, launching it via the bat if not."""
+    """Return True if Chrome is reachable on cdp_endpoint; otherwise say so and return False.
+
+    The bot never starts Chrome itself — it attaches to one the user launched with
+    --remote-debugging-port and logged into the site. If it isn't up yet, the
+    connect attempt below fails and the session loop retries every 10s.
+    """
     version_url = cdp_endpoint.rstrip("/") + "/json/version"
 
     def _probe():
@@ -79,34 +81,12 @@ async def ensure_browser_running(cdp_endpoint: str) -> bool:
         except Exception:
             return False
 
-    loop = asyncio.get_event_loop()
-
-    if await loop.run_in_executor(None, _probe):
+    if await asyncio.get_event_loop().run_in_executor(None, _probe):
         print("  [Chrome] Already running.")
         return True
 
-    if not _BAT_PATH.exists():
-        print(f"  [Chrome] {_BAT_PATH.name} not found — please launch Chrome manually.")
-        return False
-
-    print(f"  [Chrome] Browser not detected — launching {_BAT_PATH.name}...")
-    # CREATE_NO_WINDOW (not CREATE_NEW_CONSOLE): no cmd window flashes up for
-    # this — the .bat itself already detaches Chrome via `start` and exits
-    # immediately, so there's nothing useful to show here anyway.
-    subprocess.Popen(
-        ["cmd", "/c", str(_BAT_PATH)],
-        creationflags=subprocess.CREATE_NO_WINDOW,
-        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-    )
-
-    deadline = time.time() + 30
-    while time.time() < deadline:
-        await asyncio.sleep(1.5)
-        if await loop.run_in_executor(None, _probe):
-            print("  [Chrome] Browser ready.")
-            return True
-
-    print("  [Chrome] Warning: browser didn't respond within 30s — trying anyway.")
+    print(f"  [Chrome] Not reachable at {cdp_endpoint} — launch Chrome with "
+          f"--remote-debugging-port and log into the site; retrying.")
     return False
 
 

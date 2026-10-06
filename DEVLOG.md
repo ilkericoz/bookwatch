@@ -6,6 +6,21 @@ broke, what was investigated and ruled out.
 
 ---
 
+## 2026-10-06 — The bot no longer launches Chrome itself
+
+`main.py` used to auto-start a machine-local `launch_chrome.bat` when Chrome
+wasn't reachable on the CDP port. That script was never tracked (gitignored),
+so the repo depended on a file it didn't contain, and the path/profile it
+encoded is specific to one machine. Removed the auto-launch, its
+`subprocess`/`time` imports, and the README/docstring references.
+`ensure_browser_running()` is now just a probe: if Chrome isn't up it says so
+and the session loop's existing 10s connect-retry takes over once the user
+starts it. Behaviour change: a Chrome crash is no longer self-healed by the
+bot — Chrome has to be restarted by hand (or by whatever the user runs it
+with).
+
+---
+
 ## 2026-10-06 — Strip the site's name and domain out of the code
 
 The target site's name and domain were baked into the repo in three ways:
