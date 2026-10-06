@@ -1,5 +1,5 @@
 """
-Grid watcher for the site.
+Grid watcher.
 
 Polls the month-view bookings grid (one HTTP GET per watched month, through
 the attached Chrome's session), diffs booking IDs against what's been seen,
@@ -45,8 +45,8 @@ import random
 from datetime import date, datetime, timedelta
 
 from bookwatch.schedule import (
-    find_conflict, get_tier_delay, is_in_date_range, load_crew_schedule,
-    remove_slot, times_overlap, SCHEDULE_BUFFER_MINUTES,
+    find_conflict, get_tier_delay, is_bot_slot, is_in_date_range, load_crew_schedule,
+    remove_slot, times_overlap, SCHEDULE_BUFFER_MINUTES, SOURCE_SYNCED,
 )
 from bookwatch.subscribers import broadcast_alert
 from bookwatch.booker import claim_booking, fetch_modal, _pending_slots
@@ -124,7 +124,7 @@ def _sync_crew_slots(bookings, crew_name, state):
             continue
         from bookwatch.schedule import record_slot
         record_slot(b["id"], b["date"], b["start"], b["end"],
-                    "(synced)", b["shoot"], source="bot-sync")
+                    "(synced)", b["shoot"], source=SOURCE_SYNCED)
         schedule = load_crew_schedule()
         known_ids.add(b["id"])
         added += 1
@@ -170,14 +170,14 @@ def _check_new_cities_available(html, entry, state):
         print(f"[DISCOVERY] new city available: {city}")
         broadcast_alert(
             state["subscribers"],
-            f"🌍 New city available on your Booking account: {city}\n"
+            f"🌍 New city available on your account: {city}\n"
             f"Not in this entry's autobook cities yet ('{entry.get('name', '?')}') — "
             f"add it in config.json if you want bookings there watched/claimed.",
         )
 
 
 async def _conflict_is_stale(request_ctx, base_url, conflict):
-    """True if a crew_schedule conflict was actually canceled on bookwatch's side.
+    """True if a crew_schedule conflict was actually canceled on the site's side.
 
     crew_schedule.json is only swept for cancellations every REVERIFY_INTERVAL_SECONDS
     (bookwatch/reverifier.py), so a slot that just got canceled and immediately
@@ -186,8 +186,8 @@ async def _conflict_is_stale(request_ctx, base_url, conflict):
     booking that no longer exists. One extra modal fetch here, only when a
     conflict is actually hit, closes that race instead of just narrowing it.
     """
-    if not str(conflict.get("source", "")).startswith("bot") or not conflict.get("uuid"):
-        return False  # not a booking-site-uuid slot (e.g. an older entry) — can't verify, don't touch
+    if not is_bot_slot(conflict) or not conflict.get("uuid"):
+        return False  # not a booking-id slot (e.g. an older entry) — can't verify, don't touch
     try:
         status, modal = await fetch_modal(request_ctx, base_url, conflict["uuid"])
     except Exception:
@@ -230,7 +230,7 @@ async def _handle_new_booking(booking, entry, state, request_ctx, base_url):
     except Exception:
         pass
     prefix = f"{client} — " if client else ""
-    broadcast_alert(state["subscribers"], f"Booking — new booking:\n• {prefix}{label}")
+    broadcast_alert(state["subscribers"], f"New booking:\n• {prefix}{label}")
 
     if booking["crew"]:
         broadcast_alert(state["subscribers"],
@@ -265,7 +265,7 @@ async def _handle_new_booking(booking, entry, state, request_ctx, base_url):
     conflict = find_conflict(booking_date, booking["start"], booking["end"],
                              buf_before, buf_after)
     if conflict and await _conflict_is_stale(request_ctx, base_url, conflict):
-        print(f"[AUTOBOOK] Conflict slot #{conflict['uuid']} already canceled on bookwatch — clearing stale entry")
+        print(f"[AUTOBOOK] Conflict slot #{conflict['uuid']} already canceled upstream — clearing stale entry")
         remove_slot(conflict["uuid"])
         broadcast_alert(
             state["subscribers"],
@@ -319,10 +319,10 @@ async def _handle_new_booking(booking, entry, state, request_ctx, base_url):
 
 async def run_grid_watcher(request_ctx, entry, state, config):
     """Poll the month grids forever; diff → alert → claim. Never raises."""
-    base_url = config.get("base_url", "https://example.com")
+    base_url = config["base_url"]
     crew_name = config.get("crew_name", "")
     months_ahead = config.get("watch_months_ahead", 2)
-    sanity = config.get("sanity_phrase", "bot").lower()
+    sanity = config.get("sanity_phrase", "").lower()
 
     seen_ids = state.setdefault("seen_ids", {})  # {booking_id: booking date} — pruned below
     seeded_months = state.setdefault("seeded_months", set())
@@ -386,7 +386,7 @@ async def run_grid_watcher(request_ctx, entry, state, config):
                 # after the one alert.
                 if consecutive_errors % 5 == 0:
                     broadcast_alert(state["subscribers"],
-                                    f"Booking watcher failing repeatedly ({consecutive_errors}x): {e}")
+                                    f"Grid watcher failing repeatedly ({consecutive_errors}x): {e}")
                 break
 
             bookings = parse_grid(html)

@@ -30,11 +30,12 @@ os.chdir(_TMP)
 import bookwatch.watcher as watcher
 import bookwatch.booker as booker
 from bookwatch.parser import parse_grid, parse_modal, months_to_watch
+from bookwatch.schedule import SOURCE_CLAIMED
 
 TOMORROW = (date.today() + timedelta(days=1)).isoformat()
 
 # ---------------------------------------------------------------------------
-# Fixtures — realistic markup captured from the site 2026-07-06
+# Fixtures — realistic markup captured from bookwatch.app 2026-07-06
 # ---------------------------------------------------------------------------
 
 def grid_html(cards):
@@ -48,7 +49,7 @@ def grid_html(cards):
             </div></div></th>
             <td class="bookings-cell">{card}</td>
         </tr>'''
-    return f'<html><body>bookwatch<table id="bookings-table"><tbody>{rows}</tbody></table></body></html>'
+    return f'<html><body>sanity-token<table id="bookings-table"><tbody>{rows}</tbody></table></body></html>'
 
 
 def card_html(bid, starts, ends, crew=None):
@@ -220,7 +221,7 @@ async def scenario_claim_inside_window():
         check("csrf from modal", f.get("csrfmiddlewaretoken") == "TESTCSRF123", str(f))
         check("XHR header", ctx.posts[0]["headers"].get("X-Requested-With") == "XMLHttpRequest")
     sched = json.load(open("crew_schedule.json", encoding="utf-8")) if os.path.exists("crew_schedule.json") else []
-    check("slot recorded", any(s["uuid"] == "101" and s["source"] == "bot" for s in sched), str(sched))
+    check("slot recorded", any(s["uuid"] == "101" and s["source"] == SOURCE_CLAIMED for s in sched), str(sched))
     check("success alert", any("Crew assigned" in a for a in alerts), str(alerts))
     check("pending slot released", not booker._pending_slots, str(booker._pending_slots))
 
@@ -246,7 +247,7 @@ async def scenario_conflict():
     booker._pending_slots.clear()
     from bookwatch.schedule import save_crew_schedule
     save_crew_schedule([{"uuid": "X1", "date": TOMORROW, "time_start": "18:00",
-                         "time_end": "19:00", "name": "Existing", "tour": "T", "source": "bot"}])
+                         "time_end": "19:00", "name": "Existing", "tour": "T", "source": SOURCE_CLAIMED}])
     ctx = FakeRequestCtx()
     ctx.modals["103"] = (200, modal_html("103"))
     # The conflicting slot's own modal is fetched to confirm it's still live before
@@ -267,10 +268,10 @@ async def scenario_stale_conflict_cleared():
     booker._pending_slots.clear()
     from bookwatch.schedule import save_crew_schedule
     save_crew_schedule([{"uuid": "X2", "date": TOMORROW, "time_start": "18:00",
-                         "time_end": "19:00", "name": "Existing", "tour": "T", "source": "bot"}])
+                         "time_end": "19:00", "name": "Existing", "tour": "T", "source": SOURCE_CLAIMED}])
     ctx = FakeRequestCtx()
     ctx.modals["106"] = (200, modal_html("106"))
-    # X2 was canceled on bookwatch's side (crew_schedule.json hasn't caught up yet —
+    # X2 was canceled on the site's side (crew_schedule.json hasn't caught up yet —
     # reverifier only sweeps every 30 min) — its modal now 404s.
     booking = {"id": "106", "city": "Testville", "shoot": "Private Photoshoot 📸",
                "crew": "", "date": TOMORROW, "start": "18:15", "end": "18:45"}
@@ -337,7 +338,7 @@ async def scenario_watcher_loop():
 
     state = make_state() | {"interval_min": 0.05, "interval_max": 0.05, "check_count": 0}
     config = {"base_url": "https://example.com", "crew_name": "Crew",
-              "watch_months_ahead": 0, "sanity_phrase": "bot"}
+              "watch_months_ahead": 0, "sanity_phrase": "sanity-token"}
     task = asyncio.create_task(watcher.run_grid_watcher(ctx, make_entry(), state, config))
     await asyncio.sleep(1.0)
     task.cancel()
@@ -384,7 +385,7 @@ def scenario_parser():
 
 
 def scenario_new_city_discovery():
-    print("\n--- new city in bookwatch's City: filter widget → one-time alert, no auto-config ---")
+    print("\n--- new city in the site's City: filter widget → one-time alert, no auto-config ---")
     alerts.clear()
     entry = make_entry()
     entry["cities"] = ["Testville"]

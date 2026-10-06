@@ -1,5 +1,5 @@
 """
-Claim ("Assign myself") flow for the site.
+Claim ("Assign myself") flow.
 
 Two same-origin HTTP round trips through the attached Chrome's session
 (no tab, no DOM):
@@ -13,7 +13,7 @@ The POST responds with JSON {ok, booking: {assigned_crew, is_assigned_to_me}}.
 """
 import json
 
-from bookwatch.schedule import record_slot
+from bookwatch.schedule import SOURCE_CLAIMED, record_slot
 from bookwatch.subscribers import broadcast_alert
 from bookwatch.parser import parse_modal
 
@@ -96,7 +96,7 @@ async def claim_booking(request_ctx, base_url, booking, state):
         assigned = b.get("assigned_crew") or []
         if payload.get("ok") and (b.get("is_assigned_to_me") or assigned):
             record_slot(str(bid), booking["date"], booking["start"], booking["end"],
-                        modal.get("client") or "?", booking["shoot"], source="bot")
+                        modal.get("client") or "?", booking["shoot"], source=SOURCE_CLAIMED)
             names = ", ".join(
                 (m.get("name") or "?") for m in assigned if isinstance(m, dict)
             ) or "me"

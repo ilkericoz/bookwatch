@@ -1,10 +1,10 @@
 # bookwatch
 
-Watches the [the site](https://example.com) bookings grid for new photoshoot bookings in the configured cities, alerts subscribers on Telegram, and auto-claims ("Assign myself") bookings that fall inside configured date/time windows.
+Watches a bookings grid website (set `base_url` in `config.json`) for new photoshoot bookings in the configured cities, alerts subscribers on Telegram, and auto-claims ("Assign myself") bookings that fall inside configured date/time windows.
 
 ## How it works
 
-The bot attaches to a real, user-launched Chrome over CDP (port 9223) and reuses its logged-in the site session for all HTTP calls — no headless browser, no automation fingerprint.
+The bot attaches to a real, user-launched Chrome over CDP (port 9223) and reuses its logged-in site session for all HTTP calls — no headless browser, no automation fingerprint.
 
 - **Grid watcher** — polls the month-view bookings grid every few seconds, diffs booking IDs, and for each new booking: Telegram alert → autobook decision (keywords → date/time window → listing types → schedule conflict → tier delay) → claim.
 - **Re-verifier** — every 30 min re-checks each claimed future booking: canceled, time changed, or no longer assigned to us → one alert (intentional drops don't repeat).
@@ -29,6 +29,9 @@ playwright install chromium   # only the playwright driver is used (CDP attach)
 
 | Key | Description |
 |-----|-------------|
+| `base_url` | **Required.** Site root, e.g. `https://example.com` — the bot has no built-in site |
+| `cdp_endpoint` | Chrome remote-debugging endpoint, e.g. `http://localhost:9223` |
+| `sanity_phrase` | Optional text the grid page must contain; a miss is treated as logged-out/blocked |
 | `crew_name` | Crew member name to match against assigned crew |
 | `urls[].cities` | Cities to watch (omit to watch every city the account can see) |
 | `urls[].keywords` | Listing names that trigger alerts |

@@ -86,7 +86,7 @@
     .kw-chip .btn-remove { color:var(--text-faint);background:transparent;border:none;cursor:pointer;line-height:1;padding:0; }
     .kw-chip .btn-remove:hover { color:#f87171; }
 
-    /* Scanned-item toggle picker — ✓ include / ✕ exclude, sourced from the site's own grid */
+    /* Scanned-item toggle picker — ✓ include / ✕ exclude, sourced from bookwatch.app's own grid */
     .city-chip {
       font-size:11px;font-weight:500;padding:3px 9px;border-radius:999px;cursor:pointer;
       border:1px solid var(--border-input);background:transparent;color:var(--text-dim);
@@ -196,7 +196,7 @@
 
   <main class="max-w-xl mx-auto px-5 py-8 space-y-4">
 
-    <!-- ══ BOT_CONFIG PANEL — this IS the live bot's config, edits write straight to config.json ══ -->
+    <!-- ══ BOT PANEL — this IS the live bot's config, edits write straight to config.json ══ -->
     <div id="panel-bot">
       <p class="text-sm font-semibold mb-4" style="color:var(--text-muted)">Booking Bot <span class="ml-2 text-xs font-normal" style="color:var(--text-faint)">config.json</span></p>
       <div id="entry-list" class="space-y-4 mb-4"></div>
@@ -262,7 +262,7 @@
   <div id="toast" class="fixed bottom-6 right-6 text-sm font-medium px-4 py-2.5 rounded-xl shadow-xl pointer-events-none" style="background:#16a34a;color:white">Saved</div>
 
   <script>
-    const BOT_CONFIG = {{ bookwatch | tojson }};
+    const BOT_CONFIG = {{ bot_config | tojson }};
     const CACHE   = {{ cache | tojson }};
 
     function esc(s) {
@@ -708,7 +708,7 @@
       card.querySelector('.scan-note').style.display = 'block';
 
       try {
-        var r    = await fetch('/api/bookwatch/items');
+        var r    = await fetch('/api/items');
         var data = await r.json();
         if (data.error) { toast(data.error, true); return; }
         applyData(idx, data, data.scanned_at);
@@ -727,7 +727,7 @@
       var ageHours = (Date.now() - new Date(scannedAt).getTime()) / 3_600_000;
       if (ageHours < AUTO_CHECK_HOURS) return;
       try {
-        var r    = await fetch('/api/bookwatch/items');
+        var r    = await fetch('/api/items');
         var data = await r.json();
         if (data.error) return;
         applyData(idx, data, data.scanned_at);
@@ -811,7 +811,7 @@
           body: JSON.stringify({ urls: urls }),
         });
         var d = await r.json();
-        if (r.ok && d.ok) toast('Booking config saved — live in ~10s');
+        if (r.ok && d.ok) toast('Config saved — live in ~10s');
         else toast('Save failed: ' + (d.error || r.status), true);
       } catch (e) {
         toast('Save failed: ' + e.message, true);

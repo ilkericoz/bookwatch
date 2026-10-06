@@ -7,7 +7,13 @@ CONFIG_PATH = "config.json"
 
 def load_config():
     with open(CONFIG_PATH, encoding="utf-8") as f:
-        return json.load(f)
+        cfg = json.load(f)
+    if not cfg.get("base_url"):
+        raise ValueError(
+            f'"base_url" is not set in {CONFIG_PATH} — set it to the site root, '
+            f'e.g. "https://example.com" (the bot has no built-in site)'
+        )
+    return cfg
 
 
 async def config_reloader(entries, interval=10):

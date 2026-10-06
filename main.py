@@ -1,12 +1,12 @@
 """
-Booking Booking Watcher & Auto-Claimer — Human-like Chrome mode
+Booking Watcher & Auto-Claimer — Human-like Chrome mode
 
 Attaches to a real, user-launched Chrome over CDP (port 9223) and
-reuses its logged-in the site session for all HTTP calls — no headless
+reuses its logged-in site session for all HTTP calls — no headless
 browser, no automation fingerprint.
 
 How it works:
-  1. Run launch_chrome.bat once and log into the site in that
+  1. Run launch_chrome.bat once and log into the site (`base_url` in config.json) in that
      Chrome (same profile/session as before).
   2. Start this bot: `python main.py`.
   3. The bot polls the bookings grid month views through the browser's
@@ -114,10 +114,10 @@ async def run():
     config       = load_config()
     urls         = config["urls"]
     cdp_endpoint = config["cdp_endpoint"]
-    base_url     = config.get("base_url", "https://example.com")
+    base_url     = config["base_url"]
     crew_name    = config.get("crew_name", "")
 
-    print("Booking Booking Watcher — human Chrome mode")
+    print("Booking Watcher — human Chrome mode")
     print(f"CDP endpoint: {cdp_endpoint}")
     print(f"Watching: {', '.join(e['name'] for e in urls)}")
     print(f"Interval: {config['check_interval_min_seconds']}-{config['check_interval_max_seconds']}s\n")
@@ -178,7 +178,7 @@ async def _run_one_session(config, urls, cdp_endpoint, base_url, crew_name,
 
         # Defensive cleanup: if the previous session died via a broken driver
         # pipe (see bookwatch/driver_health.py), it couldn't get to page.close()
-        # on its way out, leaving a stray the site tab open in this same,
+        # on its way out, leaving a stray site tab open in this same,
         # reused Chrome context. Close any before opening today's page, or
         # every driver restart leaks one more tab into the real browser.
         for stray in list(context.pages):
@@ -224,7 +224,7 @@ async def _run_one_session(config, urls, cdp_endpoint, base_url, crew_name,
             )
             first_connect = False
         else:
-            send_telegram("Reconnected — Booking bot resuming.")
+            send_telegram("Reconnected — booking bot resuming.")
 
         request_ctx = context.request
 

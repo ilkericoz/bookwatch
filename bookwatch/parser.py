@@ -1,5 +1,5 @@
 """
-Parse the site bookings grid HTML into structured booking dicts.
+Parse the bookings grid HTML into structured booking dicts.
 
 The grid is server-rendered: each photoshoot type is a <tr class="photoshoot-group-row">
 with data-city, containing <button class="booking-card"> cells that carry

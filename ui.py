@@ -22,11 +22,11 @@ load_dotenv()
 
 app = Flask(__name__)
 
-BASE               = Path(__file__).parent
-CONFIG_PATH     = BASE / "config.json"  # the live bot's config — this app reads AND writes it
-ITEMS_CACHE = BASE / "items_cache.json"
-BOT_HEARTBEAT      = BASE / "bot_heartbeat.json"
-BOT_MAX_AGE_SECS   = 60   # heartbeat older than this → bot is considered dead
+BASE             = Path(__file__).parent
+CONFIG_PATH      = BASE / "config.json"  # the live bot's config — this app reads AND writes it
+ITEMS_CACHE      = BASE / "items_cache.json"
+BOT_HEARTBEAT    = BASE / "bot_heartbeat.json"
+BOT_MAX_AGE_SECS = 60   # heartbeat older than this → bot is considered dead
 
 # ── Auth ─────────────────────────────────────────────────────────────────────
 
@@ -75,7 +75,7 @@ def require_auth(f):
             return Response(
                 "Too many failed attempts — wait 60 s",
                 429,
-                {"Retry-After": "60", "WWW-Authenticate": 'Basic realm="Booking UI"'},
+                {"Retry-After": "60", "WWW-Authenticate": 'Basic realm="Booking Bot UI"'},
             )
 
         auth = request.authorization
@@ -89,7 +89,7 @@ def require_auth(f):
             return Response(
                 "Unauthorized",
                 401,
-                {"WWW-Authenticate": 'Basic realm="Booking UI"'},
+                {"WWW-Authenticate": 'Basic realm="Booking Bot UI"'},
             )
 
         _rate_clear(ip)
@@ -149,7 +149,7 @@ def _save_items_cache(data):
     data["scanned_at"] = datetime.now().isoformat()
     with open(ITEMS_CACHE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
-    print(f"[UI] Booking item cache saved ({sum(len(v) for v in data.get('city_items', {}).values())} total items)")
+    print(f"[UI] Item cache saved ({sum(len(v) for v in data.get('city_items', {}).values())} total items)")
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -158,10 +158,10 @@ def _save_items_cache(data):
 @require_auth
 def index():
     try:
-        bookwatch = _load(CONFIG_PATH)
+        bot_config = _load(CONFIG_PATH)
     except (FileNotFoundError, json.JSONDecodeError):
-        bookwatch = {}
-    return render_template("index.html", bookwatch=bookwatch, cache=_load_items_cache() or {})
+        bot_config = {}
+    return render_template("index.html", bot_config=bot_config, cache=_load_items_cache() or {})
 
 
 @app.route("/api/status")
@@ -197,7 +197,7 @@ def get_status():
 
 
 async def _scan_items_async(cdp_endpoint, base_url, cities, months_ahead=6):
-    """Pull real listing/tour names straight from the site's own bookings
+    """Pull real listing/tour names straight from bookwatch.app's own bookings
     grid — same HTTP-through-CDP call watcher.py makes for live polling, just
     scanning further ahead."""
     from playwright.async_api import async_playwright
@@ -231,12 +231,14 @@ async def _scan_items_async(cdp_endpoint, base_url, cities, months_ahead=6):
         }
 
 
-@app.route("/api/bookwatch/items")
+@app.route("/api/items")
 @require_auth
 def get_items():
     cfg = _load(CONFIG_PATH)
     cdp = cfg.get("cdp_endpoint", "http://127.0.0.1:9223").replace("localhost", "127.0.0.1")
-    base_url = cfg.get("base_url", "https://example.com")
+    base_url = cfg.get("base_url")
+    if not base_url:
+        return jsonify(error='"base_url" is not set in config.json')
     cities = sorted({c for u in cfg.get("urls", []) for c in u.get("cities", [])})
     try:
         result = asyncio.run(_scan_items_async(cdp, base_url, cities))

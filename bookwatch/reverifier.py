@@ -11,14 +11,15 @@ bot-recorded entry in crew_schedule.json and check:
     `unassigned_alerted` so intentional drops don't re-alert every cycle;
     the flag clears if the booking becomes ours again)
 
-Only entries whose source starts with "bot" are touched; older
+Only bot-recorded entries (see schedule.is_bot_slot) are touched; older
 entries are left alone.
 """
 import asyncio
 from datetime import date
 
 from bookwatch.schedule import (
-    load_crew_schedule, save_crew_schedule, times_overlap, SCHEDULE_BUFFER_MINUTES,
+    is_bot_slot, load_crew_schedule, save_crew_schedule, times_overlap,
+    SCHEDULE_BUFFER_MINUTES,
 )
 from bookwatch.subscribers import broadcast_alert
 from bookwatch.booker import fetch_modal
@@ -56,7 +57,7 @@ async def reverify_bookings_once(state, request_ctx, base_url, crew_name):
     targets = [
         s for s in snapshot
         if s.get("date", "") >= today_str
-        and str(s.get("source", "")).startswith("bot")
+        and is_bot_slot(s)
         and s.get("uuid")
     ]
 
@@ -131,7 +132,7 @@ async def reverify_bookings_once(state, request_ctx, base_url, crew_name):
                              b["time_start"], b["time_end"], SCHEDULE_BUFFER_MINUTES):
                 conflicts.append((a, b))
 
-    lines = ["Booking schedule re-verify — changes detected", ""]
+    lines = ["Schedule re-verify — changes detected", ""]
     if changed:
         lines.append("Time changed:")
         for slot, nd, nts, nte in changed:

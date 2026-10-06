@@ -1,5 +1,5 @@
 """
-Booking reverifier notification simulator.
+Reverifier notification simulator.
 Runs reverify_bookings_once across several cycles with a synthetic schedule and
 fake modal responses to verify the unassigned-alert dedup: an intentional drop
 alerts ONCE, stays silent on later cycles, and re-alerts only if the booking
@@ -10,6 +10,7 @@ from datetime import date, timedelta
 from unittest.mock import patch
 
 import bookwatch.reverifier as rv
+from bookwatch.schedule import SOURCE_CLAIMED
 
 FUTURE = (date.today() + timedelta(days=10)).isoformat()
 FUTURE2 = (date.today() + timedelta(days=11)).isoformat()
@@ -18,7 +19,7 @@ CREW = "Test"
 
 def make_slot(uuid, name, tour, d, ts, te):
     return {"uuid": uuid, "name": name, "tour": tour,
-            "date": d, "time_start": ts, "time_end": te, "source": "bot"}
+            "date": d, "time_start": ts, "time_end": te, "source": SOURCE_CLAIMED}
 
 
 def make_modal(d, ts, te, assigned=True, status="Active"):
@@ -94,4 +95,4 @@ schedule = run_cycle("p-002 canceled (expect alert)", schedule, modals, expect_a
 assert not any(s["uuid"] == "p-002" for s in schedule), "FAIL: canceled slot not removed"
 
 print("\n" + "=" * 65)
-print("All bookwatch reverifier scenarios passed.")
+print("All reverifier scenarios passed.")

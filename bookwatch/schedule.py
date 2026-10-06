@@ -5,6 +5,12 @@ from datetime import date, datetime, time as dtime
 CREW_SCHEDULE_PATH = "crew_schedule.json"
 SCHEDULE_BUFFER_MINUTES = 15
 
+# `source` tags for slots the bot itself recorded (claimed by it / synced from
+# the grid). Only these are re-verified against the live site; "manual" and
+# older entries are left alone.
+SOURCE_CLAIMED = "bot"
+SOURCE_SYNCED = "bot-sync"
+
 
 def load_crew_schedule():
     try:
@@ -35,8 +41,13 @@ def record_slot(uuid, booking_date, time_start, time_end, booking_name, tour, so
     save_crew_schedule(schedule)
 
 
+def is_bot_slot(slot):
+    """True for slots the bot recorded itself, i.e. ones whose uuid is a live booking id."""
+    return str(slot.get("source", "")).startswith(SOURCE_CLAIMED)
+
+
 def remove_slot(uuid):
-    """Drop one entry by uuid (e.g. once confirmed canceled on bookwatch's side)."""
+    """Drop one entry by uuid (e.g. once confirmed canceled on the site's side)."""
     schedule = load_crew_schedule()
     filtered = [s for s in schedule if s.get("uuid") != uuid]
     if len(filtered) != len(schedule):

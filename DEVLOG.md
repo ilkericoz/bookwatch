@@ -6,6 +6,32 @@ broke, what was investigated and ruled out.
 
 ---
 
+## 2026-10-06 — Strip the site's name and domain out of the code
+
+The target site's name and domain were baked into the repo in three ways:
+defaults in code (`base_url` fell back to the real URL, `sanity_phrase` to
+the site's name), file/package names, and user-facing strings. None of it
+needs to be there — the site is a deployment detail, not part of the code.
+
+- `base_url` is now required in `config.json`; `load_config()` fails with a
+  clear message if it's missing instead of silently pointing at a built-in
+  site. `sanity_phrase` defaults to empty (check disabled) — the grid-table
+  check still catches a logged-out page.
+- Renamed everything that carried the site's name: the package is now
+  `bookwatch/`, the entry point `main.py`, the tests `test_payload.py` /
+  `test_reverifier.py`, and the data files `config.json`, `subscribers.json`,
+  `items_cache.json`. The two machine-local `.bat` launchers lost the prefix
+  too. UI routes moved to `/api/config` and `/api/items`.
+- Slot `source` tags in `crew_schedule.json` are now `bot` / `bot-sync`
+  (they used to be the site's name), defined once in `schedule.py`
+  (`SOURCE_CLAIMED`, `SOURCE_SYNCED`, `is_bot_slot()`) instead of repeated
+  string literals. Existing schedule files need the old tags rewritten once;
+  anything not tagged `bot*` is no longer re-verified.
+- Alert/log/docstring wording is generic. Test fixtures use `example.com`.
+- Not changed: the parser's HTML selectors and the `/bookings/...` URL paths
+  — those are the target site's actual markup and routes, so they stay in the
+  parser/booker rather than in config.
+
 ## 2026-09-27 — Fix false conflicts against just-cancelled bookings
 
 A user report: when a booking gets cancelled on the site and the slot
@@ -45,7 +71,7 @@ unmocked ids to 404 — indistinguishable from a real cancellation.
   Verified with a standalone JS harness (checkbox toggle, fat-finger clamp,
   pre-existing-negative-value render) before shipping.
 - Bot now auto-discovers new cities becoming available on the account.
-  the site's own City: filter widget lists every city the account can see
+  The site's own City: filter widget lists every city the account can see
   regardless of the `cities=` filter applied to the request, and it's
   already embedded in the same grid HTML the watcher polls every 4-8s — so
   detection costs zero extra requests, just one more regex parse. First
@@ -144,9 +170,9 @@ every session, not just the Chrome/CDP connection. Repeated-failure alert
 changed from firing once at 5 failures to firing every 5, so a sustained
 outage keeps nagging instead of going silent.
 
-## 2026-07 — the site bot added (first commit in this repo)
+## 2026-07 — bot added (first commit in this repo)
 
-The site bot proper: month-grid watcher, auto-claim, background
+The bot proper: month-grid watcher, auto-claim, background
 reverifier and Telegram commands, with extra listing-name variants folded
 into the keyword filters. Shortly after, unassigned bookings were changed to
 alert once instead of on every reverifier cycle.
